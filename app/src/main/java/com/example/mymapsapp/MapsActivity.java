@@ -2,9 +2,11 @@ package com.example.mymapsapp;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.location.LocationManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -18,6 +20,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private GoogleMap mMap;
     private int mapType;
+    private LocationManager locationManager;
+    private boolean isGPSEnabled = false;
+    private boolean isNetworkEnabled = false;
+
+    private static final long MIN_TIME_BW_UPDATES = 1000*5;
+    private static final float MIN_DISTANCE_CHANGE_FOR_UPDATE = 0.0f;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,18 +55,47 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LatLng sandiego = new LatLng(32.986370, -117.023490);
         mMap.addMarker(new MarkerOptions().position(sandiego).title("Marker in birthplace"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sandiego));
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
         }
         mMap.setMyLocationEnabled(true);
         mapType = GoogleMap.MAP_TYPE_NORMAL;
+    }
+
+    public void getLocation()
+    {
+        try{
+            locationManager = (LocationManager)getSystemService(LOCATION_SERVICE);
+            isGPSEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+
+            //get GPS status
+            if(isGPSEnabled) Log.d("MyMaps", "getLocation: GPS is enabled");
+
+            //get network status (cell tower + wifi)
+            //ad code here to update isNetworkEnabled and output Log.d
+
+            if(!isGPSEnabled && isNetworkEnabled) //no provider enabled
+                Log.d("MyMaps", "getLocation");
+            else
+            {
+                if(isNetworkEnabled){
+                    //add Log.d here
+                    locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, MIN_TIME_BW_UPDATES,
+                            MIN_DISTANCE_CHANGE_FOR_UPDATE, locationListenerNetwork);
+                }
+                if(isGPSEnabled)
+                {
+                    //add Log.d here
+                    locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, MIN_TIME_BW_UPDATES,
+                            MIN_DISTANCE_CHANGE_FOR_UPDATE, locationListenerGps);
+                }
+            }
+        }
+        catch(Exception e) {
+            // Log.d here
+            e.printStackTrace();
+        }
     }
 
     public void fun(View view)
@@ -74,5 +111,4 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             mapType = GoogleMap.MAP_TYPE_NORMAL;
         }
     }
-
 }
